@@ -215,6 +215,54 @@ with agent_tape.replay("tapes/streaming.tape.yaml") as tape:
 
 ---
 
+## How tapes fit into your workflow
+
+A tape is a **snapshot of Claude's behavior** at a point in time. Once committed to git, every future test run replays that snapshot — no API key, no cost, no flakiness.
+
+```
+Developer (once, needs API key)         CI (every PR, no API key needed)
+───────────────────────────────         ─────────────────────────────────
+python record_tape.py                   pytest test_agent.py
+        │                                       │
+        ▼                                       ▼
+  real Claude API call              tape replayed locally
+        │                                       │
+        ▼                                       ▼
+tapes/my_agent.tape.yaml ──git commit──▶ assertions checked
+                                          (~0.5s, $0.00)
+```
+
+### What breaks these tests?
+
+Not random LLM variation — the tape freezes the model's responses. What breaks them is **your code changing** in a way that alters agent behavior: a refactored tool loop, a changed prompt, a new tool added. That's exactly what you want CI to catch.
+
+### When do you re-record?
+
+Intentionally, when you mean to change behavior:
+
+- You updated the system prompt
+- You added or renamed a tool
+- You want to capture improved model behavior after a model upgrade
+
+Run `record_tape.py` again, review the tape diff in your PR, and commit. The diff tells reviewers exactly how Claude's behavior changed — which tools it now calls, in what order, how many tokens it used. This makes behavioral changes explicit and reviewable instead of silent.
+
+### Tapes in CI (no API key required)
+
+The Anthropic SDK validates that an API key exists before making any call. In replay mode no real call is made, but you still need a non-empty value to pass that check. Set a dummy key in your test fixture:
+
+```python
+@pytest.fixture
+def result(monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-replay-key")
+    with agent_tape.replay("tapes/my_agent.tape.yaml") as tape:
+        text = run_agent("do the thing")
+    return text, tape
+```
+
+In CI, add `ANTHROPIC_API_KEY: test-replay-key` to your workflow environment — no real credentials needed.
+
+---
+
 ## Tape format
 
 Tapes are plain YAML — designed to be committed, reviewed in PRs, and diffed:
