@@ -1,4 +1,5 @@
 """Tests for streaming (SSE) record and replay support."""
+
 from __future__ import annotations
 
 import json
@@ -8,7 +9,14 @@ import httpx
 import pytest
 
 import agent_tape
-from agent_tape._tape import Tape, TapeInteraction, TapeRequest, TapeResponse, _tool_calls_from_sse, _sse_stop_reason
+from agent_tape._tape import (
+    Tape,
+    TapeInteraction,
+    TapeRequest,
+    TapeResponse,
+    _tool_calls_from_sse,
+    _sse_stop_reason,
+)
 from agent_tape._assertions import TapeAssertions
 
 
@@ -19,58 +27,97 @@ def _sse_event(event_type: str, data: dict) -> str:
     return f"event: {event_type}\ndata: {json.dumps(data)}\n\n"
 
 
-def _anthropic_stream_chunks(tool_name: str = "read_file", tool_input: dict | None = None) -> list[str]:
+def _anthropic_stream_chunks(
+    tool_name: str = "read_file", tool_input: dict | None = None
+) -> list[str]:
     """Simulate the SSE chunks the Anthropic API sends for a tool_use stream."""
     tool_input = tool_input or {"path": "document.txt"}
     return [
-        _sse_event("message_start", {
-            "type": "message_start",
-            "message": {"id": "msg_001", "role": "assistant", "model": "claude-sonnet-4-6",
-                        "usage": {"input_tokens": 100, "output_tokens": 0}},
-        }),
-        _sse_event("content_block_start", {
-            "type": "content_block_start",
-            "index": 0,
-            "content_block": {"type": "tool_use", "id": "toolu_001", "name": tool_name, "input": {}},
-        }),
-        _sse_event("content_block_delta", {
-            "type": "content_block_delta",
-            "index": 0,
-            "delta": {"type": "input_json_delta", "partial_json": json.dumps(tool_input)},
-        }),
+        _sse_event(
+            "message_start",
+            {
+                "type": "message_start",
+                "message": {
+                    "id": "msg_001",
+                    "role": "assistant",
+                    "model": "claude-sonnet-4-6",
+                    "usage": {"input_tokens": 100, "output_tokens": 0},
+                },
+            },
+        ),
+        _sse_event(
+            "content_block_start",
+            {
+                "type": "content_block_start",
+                "index": 0,
+                "content_block": {
+                    "type": "tool_use",
+                    "id": "toolu_001",
+                    "name": tool_name,
+                    "input": {},
+                },
+            },
+        ),
+        _sse_event(
+            "content_block_delta",
+            {
+                "type": "content_block_delta",
+                "index": 0,
+                "delta": {"type": "input_json_delta", "partial_json": json.dumps(tool_input)},
+            },
+        ),
         _sse_event("content_block_stop", {"type": "content_block_stop", "index": 0}),
-        _sse_event("message_delta", {
-            "type": "message_delta",
-            "delta": {"stop_reason": "tool_use"},
-            "usage": {"output_tokens": 45},
-        }),
+        _sse_event(
+            "message_delta",
+            {
+                "type": "message_delta",
+                "delta": {"stop_reason": "tool_use"},
+                "usage": {"output_tokens": 45},
+            },
+        ),
         "data: [DONE]\n\n",
     ]
 
 
 def _anthropic_end_turn_chunks() -> list[str]:
     return [
-        _sse_event("message_start", {
-            "type": "message_start",
-            "message": {"id": "msg_002", "role": "assistant", "model": "claude-sonnet-4-6",
-                        "usage": {"input_tokens": 200, "output_tokens": 0}},
-        }),
-        _sse_event("content_block_start", {
-            "type": "content_block_start",
-            "index": 0,
-            "content_block": {"type": "text", "text": ""},
-        }),
-        _sse_event("content_block_delta", {
-            "type": "content_block_delta",
-            "index": 0,
-            "delta": {"type": "text_delta", "text": "All done."},
-        }),
+        _sse_event(
+            "message_start",
+            {
+                "type": "message_start",
+                "message": {
+                    "id": "msg_002",
+                    "role": "assistant",
+                    "model": "claude-sonnet-4-6",
+                    "usage": {"input_tokens": 200, "output_tokens": 0},
+                },
+            },
+        ),
+        _sse_event(
+            "content_block_start",
+            {
+                "type": "content_block_start",
+                "index": 0,
+                "content_block": {"type": "text", "text": ""},
+            },
+        ),
+        _sse_event(
+            "content_block_delta",
+            {
+                "type": "content_block_delta",
+                "index": 0,
+                "delta": {"type": "text_delta", "text": "All done."},
+            },
+        ),
         _sse_event("content_block_stop", {"type": "content_block_stop", "index": 0}),
-        _sse_event("message_delta", {
-            "type": "message_delta",
-            "delta": {"stop_reason": "end_turn"},
-            "usage": {"output_tokens": 12},
-        }),
+        _sse_event(
+            "message_delta",
+            {
+                "type": "message_delta",
+                "delta": {"stop_reason": "end_turn"},
+                "usage": {"output_tokens": 12},
+            },
+        ),
         "data: [DONE]\n\n",
     ]
 
@@ -78,12 +125,16 @@ def _anthropic_end_turn_chunks() -> list[str]:
 def _streaming_tape(chunks_per_call: list[list[str]]) -> Tape:
     tape = Tape()
     for i, chunks in enumerate(chunks_per_call):
-        tape.interactions.append(TapeInteraction(
-            id=f"call_{i}",
-            request=TapeRequest("POST", "https://api.anthropic.com/v1/messages", {}, {}),
-            response=TapeResponse(200, {"content-type": "text/event-stream"}, body=None, chunks=chunks),
-            duration_ms=300.0,
-        ))
+        tape.interactions.append(
+            TapeInteraction(
+                id=f"call_{i}",
+                request=TapeRequest("POST", "https://api.anthropic.com/v1/messages", {}, {}),
+                response=TapeResponse(
+                    200, {"content-type": "text/event-stream"}, body=None, chunks=chunks
+                ),
+                duration_ms=300.0,
+            )
+        )
     return tape
 
 
@@ -133,11 +184,13 @@ def test_sse_stop_reason_end_turn() -> None:
 
 
 def test_streaming_assert_tool_called() -> None:
-    tape = _streaming_tape([
-        _anthropic_stream_chunks("read_file"),
-        _anthropic_stream_chunks("write_file"),
-        _anthropic_end_turn_chunks(),
-    ])
+    tape = _streaming_tape(
+        [
+            _anthropic_stream_chunks("read_file"),
+            _anthropic_stream_chunks("write_file"),
+            _anthropic_end_turn_chunks(),
+        ]
+    )
     ta = TapeAssertions(tape)
     ta.assert_tool_called("read_file")
     ta.assert_tool_called("write_file")
@@ -158,10 +211,12 @@ def test_streaming_assert_task_not_completed() -> None:
 
 
 def test_streaming_assert_no_hallucinated_tools() -> None:
-    tape = _streaming_tape([
-        _anthropic_stream_chunks("read_file"),
-        _anthropic_end_turn_chunks(),
-    ])
+    tape = _streaming_tape(
+        [
+            _anthropic_stream_chunks("read_file"),
+            _anthropic_end_turn_chunks(),
+        ]
+    )
     ta = TapeAssertions(tape)
     ta.assert_no_hallucinated_tools(["read_file", "write_file"])
     with pytest.raises(AssertionError, match="read_file"):

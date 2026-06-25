@@ -5,6 +5,7 @@ These tests use no real API keys — the RecordingTransport intercepts
 real httpx calls but the ReplayingTransport serves them back from the tape.
 The "agent" in conftest.py simulates what any LLM SDK would do under the hood.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -31,7 +32,7 @@ async def test_async_record_then_replay(tmp_path: Path) -> None:
     needing real network calls. The isolated tests below cover the same
     assertion API; this test verifies the file round-trip specifically.
     """
-    from agent_tape._tape import Tape, TapeInteraction, TapeRequest, TapeResponse
+    from agent_tape._tape import TapeInteraction, TapeRequest, TapeResponse
 
     tape_path = tmp_path / "agent_run.tape.yaml"
 
@@ -44,12 +45,14 @@ async def test_async_record_then_replay(tmp_path: Path) -> None:
     # Build and save a tape directly (simulates a completed recording)
     tape = Tape()
     for i, body in enumerate(baked):
-        tape.interactions.append(TapeInteraction(
-            id=f"call_{i}",
-            request=TapeRequest("POST", "https://api.anthropic.com/v1/messages", {}, {}),
-            response=TapeResponse(200, {"content-type": "application/json"}, body),
-            duration_ms=150.0,
-        ))
+        tape.interactions.append(
+            TapeInteraction(
+                id=f"call_{i}",
+                request=TapeRequest("POST", "https://api.anthropic.com/v1/messages", {}, {}),
+                response=TapeResponse(200, {"content-type": "application/json"}, body),
+                duration_ms=150.0,
+            )
+        )
     tape.save(tape_path)
 
     assert tape_path.exists()
@@ -70,9 +73,7 @@ async def test_async_record_replay_isolated(tmp_path: Path) -> None:
     Single-flow test: record using our transport, replay using our transport.
     The RecordingTransport wraps a fake inner transport (not real network).
     """
-    import httpx as _httpx
-    from agent_tape._tape import Tape, TapeInteraction, TapeRequest, TapeResponse
-    from agent_tape._transport import ReplayingAsyncTransport
+    from agent_tape._tape import TapeInteraction, TapeRequest, TapeResponse
 
     baked = [
         anthropic_tool_use_response("read_file", {"path": "doc.txt"}),
@@ -82,12 +83,14 @@ async def test_async_record_replay_isolated(tmp_path: Path) -> None:
     # Build the tape manually (simulates what the recorder would produce)
     tape = Tape()
     for i, body in enumerate(baked):
-        tape.interactions.append(TapeInteraction(
-            id=f"call_{i}",
-            request=TapeRequest("POST", "https://api.anthropic.com/v1/messages", {}, {}),
-            response=TapeResponse(200, {"content-type": "application/json"}, body),
-            duration_ms=100.0,
-        ))
+        tape.interactions.append(
+            TapeInteraction(
+                id=f"call_{i}",
+                request=TapeRequest("POST", "https://api.anthropic.com/v1/messages", {}, {}),
+                response=TapeResponse(200, {"content-type": "application/json"}, body),
+                duration_ms=100.0,
+            )
+        )
 
     tape_path = tmp_path / "isolated.tape.yaml"
     tape.save(tape_path)
@@ -112,7 +115,7 @@ async def test_async_record_replay_isolated(tmp_path: Path) -> None:
 
 def test_sync_record_replay_isolated(tmp_path: Path) -> None:
     """Same as the async isolated test but using httpx.Client (sync)."""
-    from agent_tape._tape import Tape, TapeInteraction, TapeRequest, TapeResponse
+    from agent_tape._tape import TapeInteraction, TapeRequest, TapeResponse
 
     baked = [
         anthropic_tool_use_response("search_web", {"query": "agent testing"}),
@@ -122,12 +125,14 @@ def test_sync_record_replay_isolated(tmp_path: Path) -> None:
 
     tape = Tape()
     for i, body in enumerate(baked):
-        tape.interactions.append(TapeInteraction(
-            id=f"call_{i}",
-            request=TapeRequest("POST", "https://api.anthropic.com/v1/messages", {}, {}),
-            response=TapeResponse(200, {"content-type": "application/json"}, body),
-            duration_ms=90.0,
-        ))
+        tape.interactions.append(
+            TapeInteraction(
+                id=f"call_{i}",
+                request=TapeRequest("POST", "https://api.anthropic.com/v1/messages", {}, {}),
+                response=TapeResponse(200, {"content-type": "application/json"}, body),
+                duration_ms=90.0,
+            )
+        )
 
     tape_path = tmp_path / "sync.tape.yaml"
     tape.save(tape_path)
@@ -147,15 +152,17 @@ def test_sync_record_replay_isolated(tmp_path: Path) -> None:
 
 def test_replay_exhaustion_raises(tmp_path: Path) -> None:
     """If the agent makes more calls than recorded, raise a clear error."""
-    from agent_tape._tape import Tape, TapeInteraction, TapeRequest, TapeResponse
+    from agent_tape._tape import TapeInteraction, TapeRequest, TapeResponse
 
     tape = Tape()
-    tape.interactions.append(TapeInteraction(
-        id="call_0",
-        request=TapeRequest("POST", "https://api.anthropic.com/v1/messages", {}, {}),
-        response=TapeResponse(200, {}, anthropic_end_turn_response()),
-        duration_ms=50.0,
-    ))
+    tape.interactions.append(
+        TapeInteraction(
+            id="call_0",
+            request=TapeRequest("POST", "https://api.anthropic.com/v1/messages", {}, {}),
+            response=TapeResponse(200, {}, anthropic_end_turn_response()),
+            duration_ms=50.0,
+        )
+    )
     tape_path = tmp_path / "short.tape.yaml"
     tape.save(tape_path)
 

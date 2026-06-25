@@ -41,6 +41,7 @@ def _serialize(body: Any) -> bytes:
 
 # ── Sync byte streams for httpx ───────────────────────────────────────────────
 
+
 class _ChunkStream(httpx.SyncByteStream):
     def __init__(self, chunks: list[str]) -> None:
         self._chunks = chunks
@@ -81,13 +82,21 @@ class RecordingTransport(httpx.BaseTransport):
             chunks: list[str] = []
             for raw in response.iter_bytes():
                 chunks.append(raw.decode("utf-8", errors="replace"))
-            self._tape.interactions.append(TapeInteraction(
-                id=f"call_{len(self._tape.interactions)}",
-                request=TapeRequest(request.method, str(request.url), req_headers,
-                                    _parse(body_bytes, req_headers)),
-                response=TapeResponse(response.status_code, resp_headers, body=None, chunks=chunks),
-                duration_ms=duration_ms,
-            ))
+            self._tape.interactions.append(
+                TapeInteraction(
+                    id=f"call_{len(self._tape.interactions)}",
+                    request=TapeRequest(
+                        request.method,
+                        str(request.url),
+                        req_headers,
+                        _parse(body_bytes, req_headers),
+                    ),
+                    response=TapeResponse(
+                        response.status_code, resp_headers, body=None, chunks=chunks
+                    ),
+                    duration_ms=duration_ms,
+                )
+            )
             return httpx.Response(
                 status_code=response.status_code,
                 headers=response.headers,
@@ -96,14 +105,18 @@ class RecordingTransport(httpx.BaseTransport):
             )
 
         resp_content = response.read()
-        self._tape.interactions.append(TapeInteraction(
-            id=f"call_{len(self._tape.interactions)}",
-            request=TapeRequest(request.method, str(request.url), req_headers,
-                                _parse(body_bytes, req_headers)),
-            response=TapeResponse(response.status_code, resp_headers,
-                                  body=_parse(resp_content, resp_headers)),
-            duration_ms=duration_ms,
-        ))
+        self._tape.interactions.append(
+            TapeInteraction(
+                id=f"call_{len(self._tape.interactions)}",
+                request=TapeRequest(
+                    request.method, str(request.url), req_headers, _parse(body_bytes, req_headers)
+                ),
+                response=TapeResponse(
+                    response.status_code, resp_headers, body=_parse(resp_content, resp_headers)
+                ),
+                duration_ms=duration_ms,
+            )
+        )
         return httpx.Response(
             status_code=response.status_code,
             headers=response.headers,
@@ -134,13 +147,21 @@ class RecordingAsyncTransport(httpx.AsyncBaseTransport):
             chunks: list[str] = []
             async for raw in response.aiter_bytes():
                 chunks.append(raw.decode("utf-8", errors="replace"))
-            self._tape.interactions.append(TapeInteraction(
-                id=f"call_{len(self._tape.interactions)}",
-                request=TapeRequest(request.method, str(request.url), req_headers,
-                                    _parse(body_bytes, req_headers)),
-                response=TapeResponse(response.status_code, resp_headers, body=None, chunks=chunks),
-                duration_ms=duration_ms,
-            ))
+            self._tape.interactions.append(
+                TapeInteraction(
+                    id=f"call_{len(self._tape.interactions)}",
+                    request=TapeRequest(
+                        request.method,
+                        str(request.url),
+                        req_headers,
+                        _parse(body_bytes, req_headers),
+                    ),
+                    response=TapeResponse(
+                        response.status_code, resp_headers, body=None, chunks=chunks
+                    ),
+                    duration_ms=duration_ms,
+                )
+            )
             return httpx.Response(
                 status_code=response.status_code,
                 headers=response.headers,
@@ -149,14 +170,18 @@ class RecordingAsyncTransport(httpx.AsyncBaseTransport):
             )
 
         resp_content = await response.aread()
-        self._tape.interactions.append(TapeInteraction(
-            id=f"call_{len(self._tape.interactions)}",
-            request=TapeRequest(request.method, str(request.url), req_headers,
-                                _parse(body_bytes, req_headers)),
-            response=TapeResponse(response.status_code, resp_headers,
-                                  body=_parse(resp_content, resp_headers)),
-            duration_ms=duration_ms,
-        ))
+        self._tape.interactions.append(
+            TapeInteraction(
+                id=f"call_{len(self._tape.interactions)}",
+                request=TapeRequest(
+                    request.method, str(request.url), req_headers, _parse(body_bytes, req_headers)
+                ),
+                response=TapeResponse(
+                    response.status_code, resp_headers, body=_parse(resp_content, resp_headers)
+                ),
+                duration_ms=duration_ms,
+            )
+        )
         return httpx.Response(
             status_code=response.status_code,
             headers=response.headers,

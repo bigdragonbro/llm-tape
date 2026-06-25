@@ -1,11 +1,10 @@
 """Shared fixtures and fake agent responses for the test suite."""
+
 from __future__ import annotations
 
-import json
 from typing import Any
 
 import httpx
-import pytest
 
 
 # ── Fake Anthropic API responses ──────────────────────────────────────────────

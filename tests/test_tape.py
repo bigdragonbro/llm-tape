@@ -1,4 +1,5 @@
 """Tests for Tape serialization and round-trip integrity."""
+
 from __future__ import annotations
 
 from pathlib import Path

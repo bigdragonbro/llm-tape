@@ -3,6 +3,7 @@ Context managers that transparently patch httpx so any code using
 httpx.Client or httpx.AsyncClient is intercepted — no framework-specific
 hooks required.
 """
+
 from __future__ import annotations
 
 from contextlib import contextmanager

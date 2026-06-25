@@ -21,7 +21,7 @@ class TapeRequest:
 class TapeResponse:
     status: int
     headers: dict[str, str]
-    body: Any           # Non-streaming: parsed JSON or string
+    body: Any  # Non-streaming: parsed JSON or string
     chunks: list[str] | None = None  # Streaming (SSE): raw event lines
 
 
@@ -98,11 +98,13 @@ def _extract_tool_calls(tape: Tape) -> list[dict[str, Any]]:
         # Anthropic non-streaming format
         for block in body.get("content", []):
             if isinstance(block, dict) and block.get("type") == "tool_use":
-                calls.append({
-                    "name": block["name"],
-                    "input": block.get("input", {}),
-                    "interaction_id": interaction.id,
-                })
+                calls.append(
+                    {
+                        "name": block["name"],
+                        "input": block.get("input", {}),
+                        "interaction_id": interaction.id,
+                    }
+                )
         # OpenAI chat completion format
         for choice in body.get("choices", []):
             msg = choice.get("message", {})
@@ -113,11 +115,13 @@ def _extract_tool_calls(tape: Tape) -> list[dict[str, Any]]:
                     args = json.loads(raw) if isinstance(raw, str) else raw
                 except json.JSONDecodeError:
                     args = raw
-                calls.append({
-                    "name": fn.get("name"),
-                    "input": args,
-                    "interaction_id": interaction.id,
-                })
+                calls.append(
+                    {
+                        "name": fn.get("name"),
+                        "input": args,
+                        "interaction_id": interaction.id,
+                    }
+                )
     return calls
 
 

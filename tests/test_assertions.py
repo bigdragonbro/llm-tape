@@ -1,4 +1,5 @@
 """Tests for TapeAssertions behavioral checks."""
+
 from __future__ import annotations
 
 import pytest
@@ -12,36 +13,47 @@ def _tape_with_calls(*tool_names: str, stop_reason: str = "end_turn") -> Tape:
     interactions: list[TapeInteraction] = []
 
     for i, name in enumerate(tool_names):
-        interactions.append(TapeInteraction(
-            id=f"call_{i}",
+        interactions.append(
+            TapeInteraction(
+                id=f"call_{i}",
+                request=TapeRequest("POST", "https://api.anthropic.com/v1/messages", {}, {}),
+                response=TapeResponse(
+                    status=200,
+                    headers={},
+                    body={
+                        "stop_reason": "tool_use",
+                        "content": [
+                            {
+                                "type": "tool_use",
+                                "id": f"toolu_{i}",
+                                "name": name,
+                                "input": {"file": f"{name}.txt"},
+                            }
+                        ],
+                        "usage": {"input_tokens": 50, "output_tokens": 20},
+                    },
+                ),
+                duration_ms=100.0,
+            )
+        )
+
+    # Final call with the given stop_reason and no tool use
+    interactions.append(
+        TapeInteraction(
+            id=f"call_{len(tool_names)}",
             request=TapeRequest("POST", "https://api.anthropic.com/v1/messages", {}, {}),
             response=TapeResponse(
                 status=200,
                 headers={},
                 body={
-                    "stop_reason": "tool_use",
-                    "content": [{"type": "tool_use", "id": f"toolu_{i}", "name": name, "input": {"file": f"{name}.txt"}}],
-                    "usage": {"input_tokens": 50, "output_tokens": 20},
+                    "stop_reason": stop_reason,
+                    "content": [{"type": "text", "text": "All done."}],
+                    "usage": {"input_tokens": 100, "output_tokens": 30},
                 },
             ),
-            duration_ms=100.0,
-        ))
-
-    # Final call with the given stop_reason and no tool use
-    interactions.append(TapeInteraction(
-        id=f"call_{len(tool_names)}",
-        request=TapeRequest("POST", "https://api.anthropic.com/v1/messages", {}, {}),
-        response=TapeResponse(
-            status=200,
-            headers={},
-            body={
-                "stop_reason": stop_reason,
-                "content": [{"type": "text", "text": "All done."}],
-                "usage": {"input_tokens": 100, "output_tokens": 30},
-            },
-        ),
-        duration_ms=80.0,
-    ))
+            duration_ms=80.0,
+        )
+    )
 
     return Tape(interactions=interactions)
 

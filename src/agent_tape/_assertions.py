@@ -48,30 +48,22 @@ class TapeAssertions:
             )
         if before is not None:
             if before not in names:
-                raise AssertionError(
-                    f"Cannot check ordering: '{before}' was never called"
-                )
+                raise AssertionError(f"Cannot check ordering: '{before}' was never called")
             if names.index(tool_name) >= names.index(before):
                 raise AssertionError(
-                    f"Expected '{tool_name}' to be called before '{before}', "
-                    f"but order was: {names}"
+                    f"Expected '{tool_name}' to be called before '{before}', but order was: {names}"
                 )
         if after is not None:
             if after not in names:
-                raise AssertionError(
-                    f"Cannot check ordering: '{after}' was never called"
-                )
+                raise AssertionError(f"Cannot check ordering: '{after}' was never called")
             if names.index(tool_name) <= names.index(after):
                 raise AssertionError(
-                    f"Expected '{tool_name}' to be called after '{after}', "
-                    f"but order was: {names}"
+                    f"Expected '{tool_name}' to be called after '{after}', but order was: {names}"
                 )
 
     def assert_tool_not_called(self, tool_name: str) -> None:
         if tool_name in self.tool_names:
-            raise AssertionError(
-                f"Tool '{tool_name}' was called but should not have been"
-            )
+            raise AssertionError(f"Tool '{tool_name}' was called but should not have been")
 
     def assert_no_hallucinated_tools(self, allowed_tools: list[str]) -> None:
         """Assert the agent only called tools from the allowed list."""
@@ -104,9 +96,7 @@ class TapeAssertions:
         """Assert the agent completed in at most max_steps LLM calls."""
         n = len(self._tape.interactions)
         if n > max_steps:
-            raise AssertionError(
-                f"Agent took {n} LLM call(s), expected at most {max_steps}"
-            )
+            raise AssertionError(f"Agent took {n} LLM call(s), expected at most {max_steps}")
 
     def assert_total_tokens_under(self, max_tokens: int) -> None:
         """Assert the total tokens (input + output) across all calls."""
@@ -117,15 +107,14 @@ class TapeAssertions:
                 usage = body.get("usage", {})
                 total += usage.get("input_tokens", 0) + usage.get("output_tokens", 0)
         if total > max_tokens:
-            raise AssertionError(
-                f"Agent used {total} token(s), expected at most {max_tokens}"
-            )
+            raise AssertionError(f"Agent used {total} token(s), expected at most {max_tokens}")
 
     # ── Completion assertions ─────────────────────────────────────────────────
 
     def assert_stop_reason(self, reason: str) -> None:
         """Assert the final LLM call stopped for the given reason."""
         from ._tape import _sse_stop_reason
+
         if not self._tape.interactions:
             raise AssertionError("Tape has no interactions")
         last = self._tape.interactions[-1]
@@ -143,9 +132,7 @@ class TapeAssertions:
                 actual = choices[0].get("finish_reason") if choices else None
 
         if actual != reason:
-            raise AssertionError(
-                f"Expected stop reason '{reason}', got '{actual}'"
-            )
+            raise AssertionError(f"Expected stop reason '{reason}', got '{actual}'")
 
     def assert_task_completed(self) -> None:
         """Assert the agent finished naturally (not by tool call or error)."""
