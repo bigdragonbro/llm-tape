@@ -41,8 +41,8 @@ dev = [
 llm_tape = "llm_tape.pytest_plugin"
 
 [project.urls]
-Homepage = "https://github.com/bigdragonbro/agent-tape"
-Issues = "https://github.com/bigdragonbro/agent-tape/issues"
+Homepage = "https://github.com/bigdragonbro/llm-tape"
+Issues = "https://github.com/bigdragonbro/llm-tape/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/llm_tape"]
