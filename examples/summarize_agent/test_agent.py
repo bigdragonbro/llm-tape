@@ -24,8 +24,11 @@ HERE = Path(__file__).parent
 
 
 @pytest.fixture
-def result(tmp_path):
+def result(monkeypatch):
     """Run the agent against the tape and return (text_result, tape_assertions)."""
+    # The Anthropic SDK validates an API key exists before sending requests.
+    # In replay mode no real call is made, but we still need a non-empty value.
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-replay-key")
     with agent_tape.replay(TAPE) as tape:
         text = run_agent("Please summarize the file notes.txt", workdir=HERE)
     return text, tape

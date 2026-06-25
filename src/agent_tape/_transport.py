@@ -220,16 +220,20 @@ class ReplayingTransport(httpx.BaseTransport):
         interaction = self._tape.interactions[self._index]
         self._index += 1
 
+        safe_headers = {
+            k: v for k, v in interaction.response.headers.items()
+            if k.lower() not in _STRIP_RESPONSE
+        }
         if interaction.is_streaming:
             return httpx.Response(
                 status_code=interaction.response.status,
-                headers=interaction.response.headers,
+                headers=safe_headers,
                 stream=_ChunkStream(interaction.response.chunks or []),
                 request=request,
             )
         return httpx.Response(
             status_code=interaction.response.status,
-            headers=interaction.response.headers,
+            headers=safe_headers,
             content=_serialize(interaction.response.body),
             request=request,
         )
@@ -251,16 +255,20 @@ class ReplayingAsyncTransport(httpx.AsyncBaseTransport):
         interaction = self._tape.interactions[self._index]
         self._index += 1
 
+        safe_headers = {
+            k: v for k, v in interaction.response.headers.items()
+            if k.lower() not in _STRIP_RESPONSE
+        }
         if interaction.is_streaming:
             return httpx.Response(
                 status_code=interaction.response.status,
-                headers=interaction.response.headers,
+                headers=safe_headers,
                 stream=_AsyncChunkStream(interaction.response.chunks or []),
                 request=request,
             )
         return httpx.Response(
             status_code=interaction.response.status,
-            headers=interaction.response.headers,
+            headers=safe_headers,
             content=_serialize(interaction.response.body),
             request=request,
         )
